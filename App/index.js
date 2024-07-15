@@ -1,51 +1,73 @@
 // Filename: index.js
 // Combined code from all files
 
-import React from 'react';
-import { SafeAreaView, StyleSheet, Text, ScrollView, View, TextInput, Button, FlatList } from 'react-native';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, Text, ScrollView, View, TextInput, Button, ActivityIndicator } from 'react-native';
+import axios from 'axios';
+
+const API_URL = 'http://apihub.p.appply.xyz:3300/chatgpt';
 
 export default function App() {
-    const [serialNumber, setSerialNumber] = useState('');
-    const [rackPosition, setRackPosition] = useState('');
-    const [switches, setSwitches] = useState([]);
+    const [heroes, setHeroes] = useState('');
+    const [villains, setVillains] = useState('');
+    const [plot, setPlot] = useState('');
+    const [story, setStory] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleAddSwitch = () => {
-        setSwitches([...switches, { serialNumber, rackPosition, id: Date.now().toString() }]);
-        setSerialNumber('');
-        setRackPosition('');
+    const generateStory = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post(API_URL, {
+                messages: [
+                    { role: "system", content: "You are a helpful assistant. Please provide answers for given requests." },
+                    { 
+                        role: "user", 
+                        content: `Create a fairy tale with the following details:
+                                  Heroes: ${heroes}
+                                  Villains: ${villains}
+                                  Plot: ${plot}`
+                    }
+                ],
+                model: "gpt-4o"
+            });
+            const { data } = response;
+            const resultString = data.response;
+            setStory(resultString);
+        } catch (error) {
+            console.error("Error generating story:", error);
+        } finally {
+            setLoading(false);
+        }
     };
-
-    const renderSwitch = ({ item }) => (
-        <View style={styles.switchItem}>
-            <Text style={styles.switchText}>Serial: {item.serialNumber}</Text>
-            <Text style={styles.switchText}>Rack Position: {item.rackPosition}</Text>
-        </View>
-    );
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView>
-                <Text style={styles.title}>Datacenter Switch Tracker</Text>
+            <ScrollView style={styles.scrollView}>
+                <Text style={styles.title}>Fairy Tale Generator</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Enter Serial Number"
-                    value={serialNumber}
-                    onChangeText={setSerialNumber}
+                    placeholder="Enter Heroes"
+                    value={heroes}
+                    onChangeText={setHeroes}
                 />
                 <TextInput
                     style={styles.input}
-                    placeholder="Enter Rack Position"
-                    value={rackPosition}
-                    onChangeText={setRackPosition}
+                    placeholder="Enter Villains"
+                    value={villains}
+                    onChangeText={setVillains}
                 />
-                <Button title="Add Switch" onPress={handleAddSwitch} />
-                <FlatList
-                    data={switches}
-                    renderItem={renderSwitch}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.list}
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter Plot"
+                    value={plot}
+                    onChangeText={setPlot}
                 />
+                <Button title="Generate Fairy Tale" onPress={generateStory} />
+                {loading ? (
+                    <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />
+                ) : (
+                    story ? <Text style={styles.story}>{story}</Text> : null
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -56,6 +78,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
         marginTop: 40,
+    },
+    scrollView: {
+        paddingHorizontal: 20,
     },
     title: {
         fontSize: 24,
@@ -69,21 +94,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#CCCCCC',
         marginBottom: 10,
-        marginHorizontal: 20,
     },
-    list: {
+    loadingIndicator: {
+        marginVertical: 20,
+    },
+    story: {
         marginTop: 20,
-    },
-    switchItem: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 5,
-        marginHorizontal: 20,
-        marginVertical: 5,
-        borderColor: '#ddd',
-        borderWidth: 1,
-    },
-    switchText: {
         fontSize: 16,
+        lineHeight: 24,
     },
 });
